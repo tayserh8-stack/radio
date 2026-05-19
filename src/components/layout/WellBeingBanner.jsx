@@ -1,34 +1,54 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getWellBeingStatus } from '../../services/wellBeingService';
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { getWellBeingStatus } from '../../services/wellBeingService'
+
+const DISMISSED_KEY = 'wellBeingDismissedDate'
+const CHECKED_KEY = 'wellBeingCheckedToday'
 
 const WellBeingBanner = () => {
-  const navigate = useNavigate();
-  const [showWellBeingReminder, setShowWellBeingReminder] = useState(false);
+  const navigate = useNavigate()
+  const [showWellBeingReminder, setShowWellBeingReminder] = useState(false)
+  const [initialising, setInitialising] = useState(true)
 
   useEffect(() => {
-    const checkWellBeingStatus = async () => {
+    const today = new Date().toDateString()
+
+    const dismissed = localStorage.getItem(DISMISSED_KEY)
+    if (dismissed === today) {
+      setInitialising(false)
+      return
+    }
+
+    const alreadyChecked = localStorage.getItem(CHECKED_KEY)
+    if (alreadyChecked === today) {
+      setInitialising(false)
+      return
+    }
+
+    const timer = setTimeout(async () => {
       try {
-        const stored = localStorage.getItem('wellBeingDismissedDate');
-        const today = new Date().toDateString();
-        if (stored === today) return;
-        const response = await getWellBeingStatus();
+        const response = await getWellBeingStatus()
         if (response.success && !response.data.hasSubmitted) {
-          setShowWellBeingReminder(true);
+          setShowWellBeingReminder(true)
+        } else if (response.success && response.data.hasSubmitted) {
+          localStorage.setItem(CHECKED_KEY, today)
         }
       } catch (error) {
-        console.error('Error checking well-being:', error);
+        console.error('Error checking well-being:', error)
+      } finally {
+        setInitialising(false)
       }
-    };
-    checkWellBeingStatus();
-  }, []);
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [])
 
   const dismissReminder = () => {
-    localStorage.setItem('wellBeingDismissedDate', new Date().toDateString());
-    setShowWellBeingReminder(false);
-  };
+    localStorage.setItem(DISMISSED_KEY, new Date().toDateString())
+    setShowWellBeingReminder(false)
+  }
 
-  if (!showWellBeingReminder) return null;
+  if (initialising || !showWellBeingReminder) return null
 
   return (
     <div className="bg-primary text-white px-4 py-2 flex items-center justify-between">
@@ -53,7 +73,7 @@ const WellBeingBanner = () => {
         </button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default WellBeingBanner;
+export default WellBeingBanner

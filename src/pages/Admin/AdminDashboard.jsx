@@ -1,106 +1,84 @@
-/**
- * Admin Dashboard
- * Main dashboard for general manager (admin)
- */
-
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { getTasksToApprove } from '../../services/taskService';
-import { getPendingLeaveRequests } from '../../services/leaveService';
-import { getDepartmentStats, getRankings, getUserCounts } from '../../services/userService';
-import { getAllDepartments } from '../../services/departmentService';
-import { getStoredUser } from '../../services/authService';
-import { useDepartments } from '../../hooks/useDepartments';
-import Card from '../../components/common/Card';
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { getTasksToApprove } from '../../services/taskService'
+import { getPendingLeaveRequests } from '../../services/leaveService'
+import { getDepartmentStats, getRankings, getUserCounts } from '../../services/userService'
+import { useDepartments } from '../../hooks/useDepartments'
+import Card from '../../components/common/Card'
 
 const LEAVE_LABELS = {
   annual: 'سنوية', sick: 'مرضية', exceptional: 'استثنائية',
   death: 'وفاة', hourly: 'ساعية', emergency: 'طارئة',
-};
+}
 
 const AdminDashboard = () => {
-  const user = getStoredUser();
-  const [tasksToApprove, setTasksToApprove] = useState([]);
-  const [summary, setSummary] = useState({ total: 0, completed: 0 });
-  const [deptStats, setDeptStats] = useState([]);
-  const [rankings, setRankings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [departments, setDepartments] = useState([]);
-  const [userCounts, setUserCounts] = useState({ employees: 0, managers: 0 });
-  const [pendingLeavesCount, setPendingLeavesCount] = useState(0);
-  const [gmPendingLeaves, setGmPendingLeaves] = useState([]);
-
-  const { getDepartmentName } = useDepartments();
+  const { departments, getDepartmentName } = useDepartments()
+  const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const [tasksToApprove, setTasksToApprove] = useState([])
+  const [summary, setSummary] = useState({ total: 0, completed: 0 })
+  const [deptStats, setDeptStats] = useState([])
+  const [rankings, setRankings] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [userCounts, setUserCounts] = useState({ employees: 0, managers: 0 })
+  const [pendingLeavesCount, setPendingLeavesCount] = useState(0)
+  const [gmPendingLeaves, setGmPendingLeaves] = useState([])
 
   useEffect(() => {
-    const loadDepts = async () => {
+    const fetchData = async () => {
       try {
-        const res = await getAllDepartments();
-        if (res.success) {
-          setDepartments(res.data.departments || []);
+        setLoading(true)
+
+        const [
+          approveRes,
+          deptRes,
+          rankRes,
+          countsRes,
+          pendingLeavesRes,
+        ] = await Promise.all([
+          getTasksToApprove(),
+          getDepartmentStats(),
+          getRankings(),
+          getUserCounts(),
+          getPendingLeaveRequests(),
+        ])
+
+        if (approveRes?.success) setTasksToApprove(approveRes.data.tasks)
+
+        if (deptRes?.success) {
+          setDeptStats(deptRes.data.stats)
+          const totalFromDepts = deptRes.data.stats.reduce((sum, d) => sum + d.totalTasks, 0)
+          const completedFromDepts = deptRes.data.stats.reduce((sum, d) => sum + d.completedTasks, 0)
+          setSummary({ total: totalFromDepts, completed: completedFromDepts })
         }
-      } catch (err) { console.error(err); }
-    };
-    loadDepts();
-  }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+        if (rankRes?.success) setRankings(rankRes.data.rankings.slice(0, 5))
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      
-      const [approveRes, deptRes, rankRes, countsRes, pendingLeavesRes] = await Promise.all([
-        getTasksToApprove(),
-        getDepartmentStats(),
-        getRankings(),
-        getUserCounts(),
-        getPendingLeaveRequests()
-      ]);
+        if (countsRes?.success) setUserCounts(countsRes.data)
 
-      if (approveRes.success) {
-        setTasksToApprove(approveRes.data.tasks);
+        if (pendingLeavesRes?.success) {
+          const allPending = pendingLeavesRes.data?.leaveRequests || []
+          setPendingLeavesCount(allPending.length)
+          setGmPendingLeaves(allPending.filter(r => r.status === 'pending_general_manager'))
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      } finally {
+        setLoading(false)
       }
-
-      if (deptRes.success) {
-        setDeptStats(deptRes.data.stats);
-        const totalFromDepts = deptRes.data.stats.reduce((sum, d) => sum + d.totalTasks, 0);
-        const completedFromDepts = deptRes.data.stats.reduce((sum, d) => sum + d.completedTasks, 0);
-        setSummary({ total: totalFromDepts, completed: completedFromDepts });
-      }
-
-      if (rankRes.success) {
-        setRankings(rankRes.data.rankings.slice(0, 5));
-      }
-
-      if (countsRes.success) {
-        setUserCounts(countsRes.data);
-      }
-      if (pendingLeavesRes?.success) {
-        const allPending = pendingLeavesRes.data?.leaveRequests || [];
-        setPendingLeavesCount(allPending.length);
-        setGmPendingLeaves(allPending.filter(r => r.status === 'pending_general_manager'));
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+
+    fetchData()
+  }, [])
 
   return (
     <div className="animate-fade-in">
-      {/* Welcome Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-dark">
-          مرحباً، {user?.name}
+          مرحباً، {storedUser?.name}
         </h1>
-        <p className="text-gray-600 mt-2">{user?.role === 'hr' ? 'لوحة تحكم الموارد البشرية' : 'لوحة تحكم المدير العام'}</p>
+        <p className="text-gray-600 mt-2">{storedUser?.role === 'hr' ? 'لوحة تحكم الموارد البشرية' : 'لوحة تحكم المدير العام'}</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Link to="/admin/reports">
           <Card className="flex items-center gap-4 hover:shadow-xl transition-shadow cursor-pointer">
@@ -195,7 +173,6 @@ const AdminDashboard = () => {
         </Link>
       </div>
 
-      {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <Link to="/admin/employees">
           <Card className="hover:shadow-xl transition-shadow cursor-pointer text-center">
@@ -271,7 +248,6 @@ const AdminDashboard = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Department Stats */}
         <Card>
           <h2 className="text-xl font-bold text-dark mb-4">إحصائيات الأقسام</h2>
           {loading ? (
@@ -310,20 +286,19 @@ const AdminDashboard = () => {
           )}
         </Card>
 
-        {/* Top Employees */}
         <Card>
           <h2 className="text-xl font-bold text-dark mb-4">أفضل الموظفين</h2>
           {loading ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-4 border-primary"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
             </div>
           ) : rankings.length === 0 ? (
             <p className="text-center text-gray-500 py-8">لا توجد بيانات</p>
           ) : (
             <div className="space-y-3">
               {rankings.map((rank) => (
-                <div 
-                  key={rank.user._id} 
+                <div
+                  key={rank.user._id}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
@@ -353,7 +328,7 @@ const AdminDashboard = () => {
         </Card>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default AdminDashboard;
+export default AdminDashboard

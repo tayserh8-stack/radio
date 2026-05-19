@@ -41,12 +41,10 @@ const DepartmentReports = () => {
       setLoading(true);
       setError(null);
 
-      const [statsRes, employeesRes] = await Promise.all([
-        getDepartmentStats(),
-        getAllEmployees()
-      ]);
-
+      const statsRes = await getDepartmentStats().catch(() => null);
       if (statsRes?.success) setDeptStats(statsRes.data);
+
+      const employeesRes = await getAllEmployees().catch(() => null);
       if (employeesRes?.success) {
         const empData = employeesRes.data?.employees || employeesRes.data || [];
         setDeptEmployees(Array.isArray(empData) ? empData : []);

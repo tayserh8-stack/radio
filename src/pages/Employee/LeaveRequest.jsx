@@ -48,12 +48,11 @@ const LeaveRequest = () => {
     setLoading(true);
     setError('');
     try {
-      const [reqRes, balRes] = await Promise.all([
-        getLeaveRequests(),
-        getLeaveBalance()
-      ]);
-      if (reqRes.success) setRequests(reqRes.data.requests || reqRes.data.leaveRequests || []);
-      if (balRes.success) setBalances(balRes.data.balances);
+      const reqRes = await getLeaveRequests().catch(() => null);
+      if (reqRes?.success) setRequests(reqRes.data.requests || reqRes.data.leaveRequests || []);
+
+      const balRes = await getLeaveBalance().catch(() => null);
+      if (balRes?.success) setBalances(balRes.data.balances);
     } catch (err) {
       setError(err.userMessage || 'خطأ في تحميل البيانات');
     } finally {

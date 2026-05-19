@@ -21,15 +21,14 @@ const WellBeingDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [statsRes, trendsRes, burnoutRes] = await Promise.all([
-        getWellBeingStats(),
-        getWellBeingTrends(selectedDays),
-        getBurnoutRisk()
-      ]);
+      const statsRes = await getWellBeingStats().catch(() => null);
+      if (statsRes?.success) setStats(statsRes.data);
 
-      if (statsRes.success) setStats(statsRes.data);
-      if (trendsRes.success) setTrends(trendsRes.data?.trendData || []);
-      if (burnoutRes.success) setBurnout(burnoutRes.data);
+      const trendsRes = await getWellBeingTrends(selectedDays).catch(() => null);
+      if (trendsRes?.success) setTrends(trendsRes.data?.trendData || []);
+
+      const burnoutRes = await getBurnoutRisk().catch(() => null);
+      if (burnoutRes?.success) setBurnout(burnoutRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {

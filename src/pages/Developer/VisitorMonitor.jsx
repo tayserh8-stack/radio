@@ -1,35 +1,33 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 
 export default function VisitorMonitor() {
   const [totalVisitors, setTotalVisitors] = useState(() => {
-    return parseInt(localStorage.getItem('totalVisitors') || '0', 10);
-  });
-  const [activeVisitors, setActiveVisitors] = useState(0);
-  const hasIncrementedRef = useRef(false);
+    return parseInt(localStorage.getItem('totalVisitors') || '0', 10)
+  })
+  const [activeVisitors, setActiveVisitors] = useState(0)
+  const hasIncrementedRef = useRef(false)
 
-  // توليد بيانات الرسم البياني مرة واحدة (ثابتة عبر re-renders)
   const chartData = useMemo(
     () => Array.from({ length: 12 }, () => Math.floor(Math.random() * 80) + 20),
     []
-  );
+  )
 
   useEffect(() => {
-    // منع الزيادة المتكررة بسبب StrictMode أو re-renders
-    if (hasIncrementedRef.current) return;
-    hasIncrementedRef.current = true;
+    if (hasIncrementedRef.current) return
+    hasIncrementedRef.current = true
 
     setTotalVisitors((prev) => {
-      const newTotal = prev + 1;
-      localStorage.setItem('totalVisitors', newTotal.toString());
-      return newTotal;
-    });
+      const newTotal = prev + 1
+      localStorage.setItem('totalVisitors', newTotal.toString())
+      return newTotal
+    })
 
     const interval = setInterval(() => {
-      setActiveVisitors(Math.floor(Math.random() * 50) + 1);
-    }, 3000);
+      setActiveVisitors(Math.floor(Math.random() * 50) + 1)
+    }, 30000)
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <div dir="rtl" className="p-5 bg-[#E3D4BE] rounded-xl border border-[#CD6F13] shadow-md">
@@ -78,7 +76,7 @@ export default function VisitorMonitor() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function StatCard({ label, value, valueColor }) {
@@ -87,5 +85,5 @@ function StatCard({ label, value, valueColor }) {
       <div className="text-sm text-[#182E4E]/70 mb-1">{label}</div>
       <div className={`text-3xl font-bold font-mono ${valueColor}`}>{value}</div>
     </div>
-  );
+  )
 }

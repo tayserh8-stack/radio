@@ -34,18 +34,13 @@ const Messages = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [inboxRes, sentRes, usersRes] = await Promise.all([
-        getInboxMessages(),
-        getSentMessages(),
-        getAllUsers()
-      ]);
-      
-      if (inboxRes?.success) {
-        setInboxMessages(inboxRes.data?.messages || []);
-      }
-      if (sentRes?.success) {
-        setSentMessages(sentRes.data?.messages || []);
-      }
+      const inboxRes = await getInboxMessages().catch(() => null);
+      if (inboxRes?.success) setInboxMessages(inboxRes.data?.messages || []);
+
+      const sentRes = await getSentMessages().catch(() => null);
+      if (sentRes?.success) setSentMessages(sentRes.data?.messages || []);
+
+      const usersRes = await getAllUsers().catch(() => null);
       if (usersRes?.success) {
         const allUsers = usersRes.data?.users || [];
         setUsers(allUsers.filter(u => u._id !== currentUser?._id));

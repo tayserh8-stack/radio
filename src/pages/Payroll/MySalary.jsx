@@ -15,16 +15,12 @@ const MySalary = () => {
   useEffect(() => {
     (async () => {
       try {
-        const [payslipRes, userRes] = await Promise.allSettled([
-          getCurrentPayslip(),
-          getCurrentUser(),
-        ]);
+        const payslipRes = await getCurrentPayslip().catch(() => null);
+        if (payslipRes?.data?.payslip) setPayslip(payslipRes.data.payslip);
 
-        if (payslipRes.status === 'fulfilled' && payslipRes.value?.data?.payslip) {
-          setPayslip(payslipRes.value.data.payslip);
-        }
-        if (userRes.status === 'fulfilled' && userRes.value?.data?.user) {
-          const u = userRes.value.data.user;
+        const userRes = await getCurrentUser().catch(() => null);
+        if (userRes?.data?.user) {
+          const u = userRes.data.user;
           setUserProfile(u);
           const payrollRes = await getEmployeePayroll(u._id || u.id, { limit: 12 }).catch(() => null);
           if (payrollRes?.data?.payrolls) {

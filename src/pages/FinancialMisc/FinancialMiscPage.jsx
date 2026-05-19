@@ -4,6 +4,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import Card from '../../components/common/Card';
 import * as financialMiscService from '../../services/financialMiscService';
+import { getStoredUser } from '../../services/authService';
 
 const emptyRow = { _id: null, type: 'expense', description: '', date: new Date().toISOString().split('T')[0], amount: '', notes: '', _new: true };
 
@@ -15,12 +16,7 @@ const typeOptions = [
 const getTypeMeta = (t) => typeOptions.find(o => o.value === t) || typeOptions[1];
 const getItemType = (item) => item.type || item.meta?.type || 'expense';
 
-const RATE_KEY = 'financialMiscExchangeRate';
 const CURRENCY_KEY = 'financialMiscCurrency';
-
-const loadRate = () => {
-  try { return Number(localStorage.getItem(RATE_KEY)) || 25000; } catch { return 25000; }
-};
 
 const loadCurrency = () => {
   try { return localStorage.getItem(CURRENCY_KEY) || 'USD'; } catch { return 'USD'; }
@@ -47,6 +43,12 @@ const formatDate = (d) => {
 export default function FinancialMiscPage({ readOnly: routeReadOnly }) {
   const isReadOnly = routeReadOnly;
   const canEdit = !isReadOnly;
+  const currentUser = getStoredUser();
+  const isFinancialDept = (dept) => {
+    if (!dept) return false;
+    return dept.trim().toLowerCase() === 'financial' || dept.trim().toLowerCase() === 'المالي';
+  };
+  const canEditRate = isFinancialDept(currentUser?.department);
 
   const [items, setItems] = useState([]);
   const [incomeTotal, setIncomeTotal] = useState(0);
@@ -61,18 +63,40 @@ export default function FinancialMiscPage({ readOnly: routeReadOnly }) {
   const [savingId, setSavingId] = useState(null);
   const [newRows, setNewRows] = useState([]);
   const [currency, setCurrency] = useState(loadCurrency);
-  const [exchangeRate, setExchangeRate] = useState(loadRate);
+  const [exchangeRate, setExchangeRate] = useState(25000);
   const [showRatePanel, setShowRatePanel] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [draftRate, setDraftRate] = useState(25000);
+  const [savingRate, setSavingRate] = useState(false);
 
-  const persistRate = (rate) => {
-    const str = String(rate).trim();
-    if (str === '' || str === '.' || str === '-') return;
-    const v = Number(str);
+  useEffect(() => {
+    financialMiscService.getExchangeRate().then(res => {
+      if (res.data?.success) {
+        setExchangeRate(res.data.data.rate);
+        setDraftRate(res.data.data.rate);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const persistRate = async () => {
+    const v = Number(draftRate);
     if (isNaN(v) || v <= 0) return;
-    setExchangeRate(v);
-    localStorage.setItem(RATE_KEY, v);
+    setSavingRate(true);
+    try {
+      const res = await financialMiscService.setExchangeRate(v);
+      if (res.data?.success) {
+        setExchangeRate(res.data.data.rate);
+        setDraftRate(res.data.data.rate);
+        if (window.toastSuccess) window.toastSuccess('تم حفظ سعر الصرف');
+        setShowRatePanel(false);
+      }
+    } catch (e) {
+      const msg = e?.response?.data?.message || e?.userMessage || 'فشل حفظ سعر الصرف';
+      if (window.toastError) window.toastError(msg); else alert(msg);
+    } finally {
+      setSavingRate(false);
+    }
   };
 
   const toggleCurrency = () => {
@@ -421,12 +445,24 @@ export default function FinancialMiscPage({ readOnly: routeReadOnly }) {
           <h3><FaDollarSign /> سعر الصرف</h3>
           <div className="exchange-rate-input-group">
             <label>1 دولار أمريكي =</label>
-            <input type="number" value={exchangeRate} onChange={e => persistRate(e.target.value)}
-              className="rate-input" min="1" />
+            {canEditRate ? (
+              <input type="number" value={draftRate}
+                onChange={e => setDraftRate(e.target.value === '' ? '' : Number(e.target.value))}
+                className="rate-input" min="1" />
+            ) : (
+              <span className="rate-display">{Number(exchangeRate).toLocaleString('ar-SA')}</span>
+            )}
             <label>ل.س</label>
-            <button onClick={() => setShowRatePanel(false)} className="btn btn-cancel text-sm py-1 px-3">حفظ</button>
+            {canEditRate && (
+              <button onClick={persistRate} disabled={savingRate}
+                className="btn btn-primary text-sm py-1 px-3">
+                {savingRate ? 'جاري الحفظ...' : 'حفظ'}
+              </button>
+            )}
+            {!canEditRate && (
+              <button onClick={() => setShowRatePanel(false)} className="btn btn-cancel text-sm py-1 px-3">إغلاق</button>
+            )}
           </div>
-          <p className="rate-hint">يتم حفظ سعر الصرف محلياً في المتصفح</p>
         </div>
       )}
 

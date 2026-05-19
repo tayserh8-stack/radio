@@ -321,6 +321,10 @@
   @apply border-2 border-gray-300 rounded-lg px-4 py-2 text-lg font-bold text-dark text-left w-32 focus:border-primary focus:ring-2 focus:ring-primary focus:ring-opacity-20 outline-none transition-all;
 }
 
+.rate-display {
+  @apply text-lg font-bold text-dark px-2;
+}
+
 .rate-hint {
   @apply text-xs text-gray-500 mt-2;
 }

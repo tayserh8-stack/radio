@@ -20,9 +20,10 @@ const AuditLogs = () => {
 
   useEffect(() => {
     (async () => {
-      const [actionsRes, entitiesRes] = await Promise.all([getAuditActions(), getAuditEntities()]);
-      if (actionsRes.success) setActions(actionsRes.data.actions);
-      if (entitiesRes.success) setEntities(entitiesRes.data.entities);
+      const actionsRes = await getAuditActions().catch(() => null);
+      if (actionsRes?.success) setActions(actionsRes.data.actions);
+      const entitiesRes = await getAuditEntities().catch(() => null);
+      if (entitiesRes?.success) setEntities(entitiesRes.data.entities);
     })();
   }, []);
 

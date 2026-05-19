@@ -31,24 +31,18 @@ const EmployeeDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [tasksRes, summaryRes, payslipRes, balanceRes] = await Promise.allSettled([
-        getMyTasks(),
-        getDailySummary(),
-        getCurrentPayslip(),
-        getLeaveBalance(),
-      ]);
-      if (tasksRes.status === 'fulfilled' && tasksRes.value?.success) {
-        setTasks(tasksRes.value.data.tasks.slice(0, 5));
-      }
-      if (summaryRes.status === 'fulfilled' && summaryRes.value?.success) {
-        setSummary(summaryRes.value.data.summary);
-      }
-      if (payslipRes.status === 'fulfilled' && payslipRes.value?.data?.payslip) {
-        setPayslip(payslipRes.value.data.payslip);
-      }
-      if (balanceRes.status === 'fulfilled' && balanceRes.value?.success) {
-        setLeaveBal(balanceRes.value.data.balances);
-      }
+
+      const tasksRes = await getMyTasks().catch(() => null);
+      if (tasksRes?.success) setTasks(tasksRes.data.tasks.slice(0, 5));
+
+      const summaryRes = await getDailySummary().catch(() => null);
+      if (summaryRes?.success) setSummary(summaryRes.data.summary);
+
+      const payslipRes = await getCurrentPayslip().catch(() => null);
+      if (payslipRes?.data?.payslip) setPayslip(payslipRes.data.payslip);
+
+      const balanceRes = await getLeaveBalance().catch(() => null);
+      if (balanceRes?.success) setLeaveBal(balanceRes.data.balances);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {

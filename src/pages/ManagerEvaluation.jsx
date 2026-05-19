@@ -37,16 +37,17 @@ const ManagerEvaluation = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [statusRes, questionsRes, managersRes] = await Promise.all([
-        getSubmissionStatus(),
-        getEvaluationQuestions(),
-        getManagersList()
-      ]);
-      
-      setStatus(statusRes.data);
-      setPeriodInfo(questionsRes.data);
-      setQuestions(questionsRes.data.questions || []);
-      setManagers(managersRes.data?.managers || []);
+      const statusRes = await getSubmissionStatus().catch(() => null);
+      if (statusRes) setStatus(statusRes.data);
+
+      const questionsRes = await getEvaluationQuestions().catch(() => null);
+      if (questionsRes) {
+        setPeriodInfo(questionsRes.data);
+        setQuestions(questionsRes.data.questions || []);
+      }
+
+      const managersRes = await getManagersList().catch(() => null);
+      if (managersRes) setManagers(managersRes.data?.managers || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {

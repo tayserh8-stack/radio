@@ -68,24 +68,20 @@ const AttendanceManagement = () => {
       setLoading(true);
       setError('');
 
-      const [attendanceRes, employeesRes] = await Promise.all([
-        getAllAttendanceRecords({
-          startDate: filters.start,
-          endDate: filters.end,
-          employeeId: filters.employee !== 'all' ? filters.employee : undefined
-        }),
-        getAllEmployees()
-      ]);
+      const attendanceRes = await getAllAttendanceRecords({
+        startDate: filters.start,
+        endDate: filters.end,
+        employeeId: filters.employee !== 'all' ? filters.employee : undefined
+      }).catch(() => null);
 
-      if (attendanceRes.success) {
+      if (attendanceRes?.success) {
         setAttendanceRecords(attendanceRes.data.records || []);
       } else {
         setError('فشل في تحميل بيانات الحضور');
       }
 
-      if (employeesRes.success) {
-        setEmployees(employeesRes.data.employees || []);
-      }
+      const employeesRes = await getAllEmployees().catch(() => null);
+      if (employeesRes?.success) setEmployees(employeesRes.data.employees || []);
     } catch (err) {
       console.error('Error loading attendance:', err);
       setError('حدث خطأ في الاتصال بالخادم');

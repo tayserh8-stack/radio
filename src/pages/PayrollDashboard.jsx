@@ -37,15 +37,14 @@ const PayrollDashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [costsRes, summaryRes, recentRes] = await Promise.all([
-          getDepartmentCosts().catch(() => ({ success: false })),
-          getPayrollSummary().catch(() => ({ success: false })),
-          getRecentPayments().catch(() => ({ success: false }))
-        ]);
 
+        const costsRes = await getDepartmentCosts().catch(() => ({ success: false }));
         if (costsRes?.success) setDepartmentCosts(costsRes.data?.departmentCosts || []);
+
+        const recentRes = await getRecentPayments().catch(() => ({ success: false }));
         if (recentRes?.success) setRecentPayments(recentRes.data?.recentPayments || []);
 
+        const summaryRes = await getPayrollSummary().catch(() => ({ success: false }));
         if (summaryRes?.success) {
           const s = summaryRes.data;
           setDashboardData({

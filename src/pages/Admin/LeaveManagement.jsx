@@ -195,14 +195,14 @@ const LeaveManagement = () => {
         startDate: dateFrom || undefined,
         endDate: dateTo || undefined,
       };
-      const [leaveRes, empRes, deptRes] = await Promise.all([
-        getLeaveRequests(params),
-        getAllEmployees(),
-        getAllDepartments(),
-      ]);
-      if (leaveRes.success) setLeaveRequests(leaveRes.data.requests || leaveRes.data || []);
-      if (empRes.success) setEmployees(empRes.data.users || empRes.data.employees || []);
-      if (deptRes.success) setDepartments(deptRes.data.departments || []);
+      const leaveRes = await getLeaveRequests(params).catch(() => null);
+      if (leaveRes?.success) setLeaveRequests(leaveRes.data.requests || leaveRes.data || []);
+
+      const empRes = await getAllEmployees().catch(() => null);
+      if (empRes?.success) setEmployees(empRes.data.users || empRes.data.employees || []);
+
+      const deptRes = await getAllDepartments().catch(() => null);
+      if (deptRes?.success) setDepartments(deptRes.data.departments || []);
     } catch (err) {
       setError('حدث خطأ في تحميل البيانات');
     } finally {

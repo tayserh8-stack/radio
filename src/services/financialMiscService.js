@@ -6,3 +6,5 @@ export const createFinancialMisc = (data) => api.post('/financial-misc', data);
 export const updateFinancialMisc = (id, data) => api.put(`/financial-misc/${id}`, data);
 export const deleteFinancialMisc = (id) => api.delete(`/financial-misc/${id}`);
 export const archiveMonth = (month) => api.post('/financial-misc/archive-month', { month });
+export const getExchangeRate = () => api.get('/financial-misc/exchange-rate');
+export const setExchangeRate = (rate) => api.put('/financial-misc/exchange-rate', { rate });

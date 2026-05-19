@@ -25,12 +25,11 @@ const Attendance = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [todayRes, historyRes] = await Promise.all([
-        getTodayAttendance(),
-        getAllAttendanceRecords({ limit: 20 })
-      ]);
-      if (todayRes.success) setTodayRecord(todayRes.data?.attendance || todayRes.data || null);
-      if (historyRes.success) setHistory(historyRes.data?.records || []);
+      const todayRes = await getTodayAttendance().catch(() => null);
+      if (todayRes?.success) setTodayRecord(todayRes.data?.attendance || todayRes.data || null);
+
+      const historyRes = await getAllAttendanceRecords({ limit: 20 }).catch(() => null);
+      if (historyRes?.success) setHistory(historyRes.data?.records || []);
     } catch {
       setError('فشل تحميل بيانات الحضور');
     } finally {
