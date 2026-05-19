@@ -115,6 +115,8 @@ const Register = () => {
       });
 
       if (response?.success || response?.data?.success) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
         setSuccess('تم التسجيل بنجاح! يرجى انتظار تفعيل حسابك من المدير العام.');
         setFormData({
           name: '',
